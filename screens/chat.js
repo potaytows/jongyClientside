@@ -4,6 +4,7 @@ import io from 'socket.io-client';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
+import { reduce } from 'lodash';
 
 const apiheader = process.env.EXPO_PUBLIC_apiURI;
 const socket = io(apiheader);
@@ -31,25 +32,33 @@ const ChatScreen = ({ route }) => {
         fetchChatMessages();
     }, [reservationID]);
 
-    
+
     useFocusEffect(
         React.useCallback(() => {
+            const userType = "customer";
             console.log('Joining room:', reservationID);
-            socket.emit('joinRoom', reservationID);
+            socket.emit('joinRoom', reservationID, userType);
 
             socket.on('message', (message) => {
                 console.log('Received message:', message);
                 setMessages(prevMessages => [...prevMessages, message]);
             });
 
+            socket.on('updateMessages', (updatedMessages) => {
+                console.log('Received updated messages:', updatedMessages);
+                setMessages(updatedMessages);
+            });
+
             return () => {
                 console.log('Leaving room:', reservationID);
+                socket.emit('leaveRoom', reservationID);
                 socket.off('message');
+                socket.off('updateMessages');
             };
         }, [reservationID])
     );
 
-    const sendMessage = async() => {
+    const sendMessage = async () => {
         if (newMessage.trim()) {
             console.log('Sending message:', newMessage);
             socket.emit('chatMessage', { reservationID, sender: 'customer', message: newMessage });
@@ -138,14 +147,20 @@ const ChatScreen = ({ route }) => {
                                     </View>
                                 )}
                                 {item.sender === 'customer' && (
-                                    <TouchableOpacity style={styles.chickTime} onPress={() => showTime(item._id)}>
-                                        <Text style={[styles.messageText,
-                                        item.sender === 'restaurant' && { backgroundColor: 'grey' },
-                                        item.isLast && { borderTopRightRadius: 10 },
-                                        item.isFirst && { borderBottomRightRadius: 10 },
-                                        !group.isOneOfGroup && !item.isFirst && !item.isLast && { borderBottomRightRadius: 10, borderTopRightRadius: 10 }
-                                        ]}>{item.message}</Text>
-                                    </TouchableOpacity>
+                                    <View style={styles.showReadIt}>
+                                        <View style={styles.IsReadIt}>
+                                            {item.readStatus === 'notRead' && (<Text style={styles.ReadText}></Text>)}
+                                            {item.readStatus === 'ReadIt' && (<Text style={styles.ReadText}>อ่านแล้ว</Text>)}
+                                        </View>
+                                        <TouchableOpacity style={styles.chickTime} onPress={() => showTime(item._id)}>
+                                            <Text style={[styles.messageText,
+                                            item.sender === 'restaurant' && { backgroundColor: 'grey' },
+                                            item.isLast && { borderTopRightRadius: 10 },
+                                            item.isFirst && { borderBottomRightRadius: 10 },
+                                            !group.isOneOfGroup && !item.isFirst && !item.isLast && { borderBottomRightRadius: 10, borderTopRightRadius: 10 }
+                                            ]}>{item.message}</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 )}
                                 {visibleTimestamps[item._id] && (
                                     <Text style={styles.timestamp}>{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
@@ -249,6 +264,7 @@ const styles = StyleSheet.create({
     },
     chickTime: {
         justifyContent: 'center',
+        marginTop: 2,
         marginLeft: 5
     },
     space: {
@@ -256,9 +272,16 @@ const styles = StyleSheet.create({
         height: 40,
         borderRadius: 50
     },
-    chickTime: {
-        marginTop: 2,
-        marginLeft: 5
+    showReadIt: {
+        flexDirection: 'row',
+        alignItems: 'flex-end' 
+    },
+    IsReadIt: {
+    },
+    ReadText: {
+        textAlign: 'center',
+        fontSize: 12,
+        color:'#999999'
     }
 });
 

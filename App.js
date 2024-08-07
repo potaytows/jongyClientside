@@ -20,6 +20,8 @@ import MenuAddonScreen from './screens/menuAddon';
 import ReservationListScreen from './screens/reservationList';
 import ReservationDetailScreen from './screens/reservationDetail';
 import ChatScreen from './screens/chat';
+import { NotificationProvider } from './screens/notification';
+import FlashMessage from 'react-native-flash-message';
 const Stack = createStackNavigator();
 
 
@@ -46,9 +48,14 @@ const App = () => {
   }, []);
 
   return (
-      <NavigationContainer>
+    <NavigationContainer>
+      <NotificationProvider>
         <Stack.Navigator
-          screenOptions={{ headerStyle: { backgroundColor: '#ff8a24' }, headerTintColor: 'white', headerTitleAlign: 'center' }}>
+          screenOptions={{
+            headerStyle: { backgroundColor: '#ff8a24' },
+            headerTintColor: 'white',
+            headerTitleAlign: 'center'
+          }}>
           <Stack.Screen name="tab" component={Tabs} options={{ headerShown: false }} />
           <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
@@ -68,7 +75,9 @@ const App = () => {
           <Stack.Screen name='Chat' component={ChatScreen} />
           <Stack.Screen name="RestaurantDetail" component={RestaurantDetailScreen} options={({ route }) => ({ title: route.params.restaurantName })} />
         </Stack.Navigator>
-      </NavigationContainer>
+        <FlashMessage position="top" />
+      </NotificationProvider>
+    </NavigationContainer>
   );
 }
 
